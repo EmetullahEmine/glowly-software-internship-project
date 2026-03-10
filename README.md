@@ -41,10 +41,6 @@ The goal of the project is to help users better understand their skin and build 
 
 The application includes several screens such as:
 
-## 📱 Screens
-
-The application includes several screens such as:
-
 **Home Screen** <br>
 <img src="screenshots/homescreen.jpg" width="250"> <br><br>
 
