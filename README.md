@@ -1,5 +1,4 @@
 # glowly-software-internship-project
-Software development internship project completed at Glowly.
 
 # 🌿 Glowly – AI Powered Skin Analysis & Skincare Assistant
 
@@ -46,14 +45,29 @@ The application includes several screens such as:
 
 The application includes several screens such as:
 
-<img src="screenshots/homescreen.jpg" alt="Home Screen" width="250">
-<img src="screenshots/skinanalysisquestionscreen.jpg" alt="Skin Analysis Question Screen" width="250">
-<img src="screenshots/skinanalysisresultscreen.jpg" alt="Skin Analysis Result Screen" width="250">
-<img src="screenshots/skincareroutinecreationscreen.jpg" alt="Skincare Routine Creation Screen" width="250">
-<img src="screenshots/skincareroutinedisplayscreen.jpg" alt="Skincare Routine Display Screen" width="250">
-<img src="screenshots/nutritionrecommendationscreen.jpg" alt="Nutrition Recommendation Screen" width="250">
-<img src="screenshots/signupscreen.jpg" alt="Sign Up Screen" width="250">
-<img src="screenshots/loginscreen.jpg" alt="Login Screen" width="250">
+**Home Screen** <br>
+<img src="screenshots/homescreen.jpg" width="250"> <br><br>
+
+**Skin Analysis Question Screen** <br>
+<img src="screenshots/skinanalysisquestionscreen.jpg" width="250"> <br><br>
+
+**Skin Analysis Result Screen** <br>
+<img src="screenshots/skinanalysisresultscreen.jpg" width="250"> <br><br>
+
+**Skincare Routine Creation Screen** <br>
+<img src="screenshots/skincareroutinecreationscreen.jpg" width="250"> <br><br>
+
+**Skincare Routine Display Screen** <br>
+<img src="screenshots/skincareroutinedisplayscreen.jpg" width="250"> <br><br>
+
+**Nutrition Recommendation Screen** <br>
+<img src="screenshots/nutritionrecommendationscreen.jpg" width="250"> <br><br>
+
+**Sign Up Screen** <br>
+<img src="screenshots/signupscreen.jpg" width="250"> <br><br>
+
+**Login Screen** <br>
+<img src="screenshots/loginscreen.jpg" width="250">
 
 ## 💡 Project Purpose
 
@@ -115,14 +129,29 @@ Projenin amacı, kişiselleştirilmiş önerilerle kullanıcıların ciltlerini 
 
 Uygulamada yer alan bazı ekranlar şunlardır:
 
-![Ana Ekran](screenshots/homescreen.jpg)
-![Cilt Analizi Soru Ekranı](screenshots/skinanalysisquestionscreen.jpg)
-![Cilt Analizi Sonuç Ekranı](screenshots/skinanalysisresultscreen.jpg)
-![Cilt Bakım Rutini Oluşturma Ekranı](screenshots/skincareroutinecreationscreen.jpg)
-![Cilt Bakım Rutini Görüntüleme Ekranı](screenshots/skincareroutinedisplayscreen.jpg)
-![Beslenme Önerisi Ekranı](screenshots/nutritionrecommendationscreen.jpg)
-![Kayıt Ol Ekranı](screenshots/signupscreen.jpg)
-![Giriş Yap Ekranı](screenshots/loginscreen.jpg)
+**Ana Ekran** <br>
+<img src="screenshots/homescreen.jpg" width="250"> <br><br>
+
+**Cilt Analizi Soru Ekranı** <br>
+<img src="screenshots/skinanalysisquestionscreen.jpg" width="250"> <br><br>
+
+**Cilt Analizi Sonuç Ekranı** <br>
+<img src="screenshots/skinanalysisresultscreen.jpg" width="250"> <br><br>
+
+**Cilt Bakım Rutini Oluşturma Ekranı** <br>
+<img src="screenshots/skincareroutinecreationscreen.jpg" width="250"> <br><br>
+
+**Cilt Bakım Rutini Görüntüleme Ekranı** <br>
+<img src="screenshots/skincareroutinedisplayscreen.jpg" width="250"> <br><br>
+
+**Beslenme Önerisi Ekranı** <br>
+<img src="screenshots/nutritionrecommendationscreen.jpg" width="250"> <br><br>
+
+**Kayıt Ol Ekranı** <br>
+<img src="screenshots/signupscreen.jpg" width="250"> <br><br>
+
+**Giriş Yap Ekranı** <br>
+<img src="screenshots/loginscreen.jpg" width="250">
 
 ## 💡 Projenin Amacı
 
