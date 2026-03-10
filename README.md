@@ -42,14 +42,18 @@ The goal of the project is to help users better understand their skin and build 
 
 The application includes several screens such as:
 
-![Home Screen](screenshots/homescreen.jpg)
-![Skin Analysis Question Screen](screenshots/skinanalysisquestionscreen.jpg)
-![Skin Analysis Result Screen](screenshots/skinanalysisresultscreen.jpg)
-![Skincare Routine Creation Screen](screenshots/skincareroutinecreationscreen.jpg)
-![Skincare Routine Display Screen](screenshots/skincareroutinedisplayscreen.jpg)
-![Nutrition Recommendation Screen](screenshots/nutritionrecommendationscreen.jpg)
-![Sign Up Screen](screenshots/signupscreen.jpg)
-![Login Screen](screenshots/loginscreen.jpg)
+## 📱 Screens
+
+The application includes several screens such as:
+
+<img src="screenshots/homescreen.jpg" alt="Home Screen" width="250">
+<img src="screenshots/skinanalysisquestionscreen.jpg" alt="Skin Analysis Question Screen" width="250">
+<img src="screenshots/skinanalysisresultscreen.jpg" alt="Skin Analysis Result Screen" width="250">
+<img src="screenshots/skincareroutinecreationscreen.jpg" alt="Skincare Routine Creation Screen" width="250">
+<img src="screenshots/skincareroutinedisplayscreen.jpg" alt="Skincare Routine Display Screen" width="250">
+<img src="screenshots/nutritionrecommendationscreen.jpg" alt="Nutrition Recommendation Screen" width="250">
+<img src="screenshots/signupscreen.jpg" alt="Sign Up Screen" width="250">
+<img src="screenshots/loginscreen.jpg" alt="Login Screen" width="250">
 
 ## 💡 Project Purpose
 
