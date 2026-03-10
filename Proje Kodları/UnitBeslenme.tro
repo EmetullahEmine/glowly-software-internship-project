@@ -1,0 +1,136 @@
+var
+  RoutineForm : TclForm;
+  RoutineMemo : TclMemo;
+  RefreshBtn  : TclProButton;
+  qSess : TclSQLiteQuery;
+  email, skinType: String;
+  Rest : TclRest;
+  API_KEY, RequestBody : String;
+
+
+void OnRoutineCompleted;
+var txt : String;
+{
+  try
+    if (Rest.StatusCode >= 400)
+    {
+      ShowMessage('API Hatası: ' + Rest.Response);
+      Exit;
+    }
+
+    txt = '';
+    try
+      txt = Clomosy.CLParseJSON(Rest.Response, 'candidates.0.content.parts.0.text');
+    except
+      txt = '';
+    }
+
+    if (txt == '')
+    {
+      ShowMessage('Beslenme önerilerini çözümlerken hata.');
+      Exit;
+    }
+
+    RoutineMemo.Lines.Text = txt;
+
+  except
+    ShowMessage('Öneriler alınırken hata: ' + LastExceptionMessage);
+  }
+}
+
+
+void RestCreate(ABaseUrl, ABody : String);
+{
+  try
+    Rest = TclRest.Create;
+    Rest.Accept = 'application/json';
+    Rest.ContentType = 'application/json';
+    Rest.Method = rmPOST;
+    Rest.ConnectTimeOut = 30000;
+    Rest.BaseURL = ABaseUrl;
+    Rest.Body = ABody;
+    Rest.OnCompleted = 'OnRoutineCompleted';
+    Rest.ExecuteAsync;
+  except
+    ShowMessage('Sunucuya bağlanırken hata oluştu: ' + LastExceptionMessage);
+  }
+}
+
+
+void LoadNutrition;
+var prompt, safePrompt : String;
+{
+  try
+       email = '';
+    qSess = Clomosy.DBSQLiteQueryWith('SELECT email FROM appsession WHERE id=1');
+    qSess.OpenOrExecute;
+    if not qSess.EOF
+      email = qSess.FieldByName('email').AsString;
+    qSess.Free;
+
+    
+    skinType = '';
+    qSess = Clomosy.DBSQLiteQueryWith('SELECT skin_type FROM skin_profile WHERE email=' + QuotedStr(email));
+    qSess.OpenOrExecute;
+    if not qSess.EOF
+      skinType = qSess.FieldByName('skin_type').AsString;
+    qSess.Free;
+
+    if skinType == ''
+    {
+      ShowMessage('Cilt tipi bulunamadı. Önce analiz yapmalısınız.');
+      Exit;
+    }
+    
+    prompt = 'Kullanıcının cilt tipi: ' + skinType + '. ' +
+             'Sen deneyimli bir dermatologsun. ' +
+             'Bu cilt tipine uygun beslenme önerilerini açık ve sade şekilde yaz. ' +
+             'Yazıları bold yapma, sadece rakamlarla listele. ' +
+             'Giriş cümlesi “Beslenme Önerilerim şunlardır:” ile başlasın ve sonunda mutlaka "Herhangi bir sorun olursa mutlaka doktora danışın." uyarısı olsun.';
+
+    safePrompt = clGetStringReplace(prompt, '"', '\"');
+    safePrompt = clGetStringReplace(safePrompt, #10, ' ');
+    safePrompt = clGetStringReplace(safePrompt, #13, ' ');
+
+    RequestBody = '{ "contents": [ { "parts": [ { "text": "' + safePrompt + '" } ] } ] }';
+    API_KEY = 'YOURTOKEN';
+
+    RestCreate(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + API_KEY,
+      RequestBody
+    );
+
+  except
+    ShowMessage('Beslenme önerileri hazırlanırken hata: ' + LastExceptionMessage);
+  }
+}
+
+
+{
+  RoutineForm = TclForm.Create(Self);
+  RoutineForm.BtnFormMenu.Visible = False;
+
+  RoutineMemo = RoutineForm.AddNewMemo(RoutineForm, 'RoutineMemo', '');
+  RoutineMemo.Align = alClient;
+  RoutineMemo.ReadOnly = True;
+  RoutineMemo.WordWrap = True;
+  RoutineMemo.TextSettings.Font.Size = 14;
+
+  RefreshBtn = RoutineForm.AddNewProButton(RoutineForm, 'RefreshBtn', 'Önerileri Göster');
+  RefreshBtn.Align = alBottom;
+  RefreshBtn.Height = 50;
+  RefreshBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#dbcee3');
+  RefreshBtn.clProSettings.FontColor = clAlphaColor.clHexToColor('#ffffff');
+  RefreshBtn.SetclProSettings(RefreshBtn.clProSettings);
+
+  RoutineForm.AddNewEvent(RefreshBtn, tbeOnClick, 'LoadNutrition');
+
+  Clomosy.DBSQLiteConnect(Clomosy.AppFilesPath + 'sonn.db3', '');
+
+  LoadNutrition;
+  
+  RoutineForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/yok.png');
+  RoutineForm.SetFormBGImage('yok.png');
+
+  RoutineForm.Run;
+}

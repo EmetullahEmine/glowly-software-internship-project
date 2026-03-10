@@ -1,0 +1,644 @@
+var 
+myForm:TclForm; 
+SurveyContainerPnl, MainContainerPnl, ResultContainerPnl : TclProPanel; 
+CaptionLbl, QuestionCountLbl, QuestionCptLbl, QuestionLbl : TclProLabel; 
+RadioGroup1:TClRadioGroup; 
+QuestionLyt, BttmLyt : TclLayout; 
+StartBtn, BackBtn, NextBtn, BackMainPageBtn : TClProButton; 
+Memo1 : TclMemo; 
+email: String; 
+LastSkinType: String;
+
+
+QuestionArr, Q1Arr,Q2Arr,Q3Arr,Q4Arr,Q5Arr,Q6Arr,Q7Arr,Q8Arr,Q9Arr,Q10Arr, AnswerArr; 
+I : Integer; 
+questionCount : Integer; 
+
+Rest: TclRest; 
+API_KEY: string; 
+RequestBody: string; 
+
+AnswersJSON : String; 
+
+qSess: TclSQLiteQuery; 
+
+void OnRadioButtonClick; 
+var SelectedIndex: Integer; 
+SelectedText: String; 
+{ 
+    SelectedIndex = RadioGroup1.ItemIndex; 
+    if (SelectedIndex > -1) { 
+        SelectedText = RadioGroup1.Items[SelectedIndex]; 
+        AnswerArr[questionCount,0] = QuestionArr[questionCount]; 
+        AnswerArr[questionCount,1] = SelectedText; 
+    } 
+} 
+
+
+void LoadRadioGroupOptions;
+var
+  I: Integer;
+{
+  RadioGroup1.Items.Clear;
+  RadioGroup1.Visible = True;
+
+  QuestionCountLbl.Text = IntToStr(questionCount + 1) + '/10';
+  QuestionLbl.Text = QuestionArr[questionCount];
+
+  case questionCount of
+  {
+    0: for I = 0 to High(Q1Arr) RadioGroup1.Items.Add(Q1Arr[I]);
+    1: for I = 0 to High(Q2Arr) RadioGroup1.Items.Add(Q2Arr[I]);
+    2: for I = 0 to High(Q3Arr) RadioGroup1.Items.Add(Q3Arr[I]);
+    3: for I = 0 to High(Q4Arr) RadioGroup1.Items.Add(Q4Arr[I]);
+    4: for I = 0 to High(Q5Arr) RadioGroup1.Items.Add(Q5Arr[I]);
+    5: for I = 0 to High(Q6Arr) RadioGroup1.Items.Add(Q6Arr[I]);
+    6: for I = 0 to High(Q7Arr) RadioGroup1.Items.Add(Q7Arr[I]);
+    7: for I = 0 to High(Q8Arr) RadioGroup1.Items.Add(Q8Arr[I]);
+    8: for I = 0 to High(Q9Arr) RadioGroup1.Items.Add(Q9Arr[I]);
+    9: for I = 0 to High(Q10Arr) RadioGroup1.Items.Add(Q10Arr[I]);
+  }
+}
+
+void SaveSkinTypeToDB;
+{
+  try
+    
+    email = '';
+    qSess = Clomosy.DBSQLiteQueryWith('SELECT email FROM appsession WHERE id=1');
+    qSess.OpenOrExecute;
+    if (not qSess.EOF)
+      email = qSess.FieldByName('email').AsString;
+    qSess.Free;
+
+    
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'CREATE TABLE IF NOT EXISTS skin_profile (' +
+      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
+      'email TEXT,' +
+      'skin_type TEXT,' +
+      'created_at DATETIME DEFAULT CURRENT_TIMESTAMP)';
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+    
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'DELETE FROM skin_profile WHERE email=' + QuotedStr(email);
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+    
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'INSERT INTO skin_profile (email, skin_type) VALUES (' +
+      QuotedStr(email) + ',' + QuotedStr(LastSkinType) + ')';
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+  except
+    ShowMessage('Cilt tipi kaydı sırasında hata oluştu: ' + LastExceptionMessage);
+  }
+}
+
+
+void ACompletedProc;
+var
+  txt, err: String;
+{
+  QuestionCountLbl.Visible = False;
+  QuestionCountLbl.Text = '1/10';
+  SurveyContainerPnl.Visible = False;
+  ResultContainerPnl.Visible = True;
+
+  //Memo1.Lines.Add('--- RAW RESPONSE ---');
+  //Memo1.Lines.Add(Rest.Response);
+
+  try
+  {
+
+    if (Rest.StatusCode >= 400) 
+    {
+      err = '';
+      try
+        err = Clomosy.CLParseJSON(Rest.Response, 'error.message');
+      except
+        err = '';
+      }
+
+      if (err == '') 
+        err = 'HTTP ' + IntToStr(Rest.StatusCode);
+
+      ShowMessage('API Hatası: ' + err);
+      Exit;
+    }
+
+
+    if (Pos('"error"', Rest.Response) > 0) 
+    {
+      err = '';
+      try
+        err = Clomosy.CLParseJSON(Rest.Response, 'error.message');
+      except
+        err = '';
+      }
+
+      if (err == '') 
+        err = Rest.Response;
+
+      ShowMessage('API Hatası: ' + err);
+      Exit;
+    }
+
+    txt = '';
+    try
+      txt = Clomosy.CLParseJSON(Rest.Response, 'candidates.0.content.parts.0.text');
+    except
+      txt = '';
+    }
+
+    if (txt == '') 
+    {
+
+      try
+        txt = Clomosy.CLParseJSON(Rest.Response, 'candidates.0.output.0.content.0.text');
+      except
+        txt = '';
+      }
+    }
+
+    if (txt == '') 
+    {
+      Memo1.Lines.Add('Parse uyarısı: Beklenen "candidates.0.content.parts.0.text" bulunamadı.');
+      ShowMessage('Yanıt metni çıkarılamadı. JSON yapısı değişmiş olabilir.');
+      Exit;
+    }
+
+
+    txt = clGetStringReplace(txt, #10, '');
+    txt = clGetStringReplace(txt, #13, '');
+
+    Memo1.Lines.Add('--- Cilt Tipiniz ---');
+    Memo1.Lines.Add(txt);
+    ShowMessage('Sonuç: ' + txt);
+
+    LastSkinType = txt;
+    SaveSkinTypeToDB;
+
+}
+  except
+    ShowMessage('Gelen veri işlenirken hata oluştu: ' + LastExceptionMessage);
+  }
+}
+
+
+void RestCreate(ABaseUrl, ABody :String); 
+{ 
+    try 
+        Rest = TclRest.Create; 
+        Rest.Accept = 'application/json'; 
+        Rest.ContentType = 'application/json'; 
+        Rest.Method = rmPOST; 
+        Rest.ConnectTimeOut=30000; 
+        Rest.BaseURL = ABaseUrl; 
+        Rest.Body = ABody; 
+        Rest.OnCompleted = 'ACompletedProc'; 
+        Rest.ExecuteAsync; 
+    except 
+        ShowMessage('Sunucuya bağlanırken hata oluştu: '+LastExceptionMessage); 
+    } 
+} 
+
+void SaveTempAnswersToDB; 
+{ 
+    try 
+        Clomosy.DBSQLiteQuery.SQL.Text = 'CREATE TABLE IF NOT EXISTS skin_survey_temp ('+ 
+                                         'id INTEGER PRIMARY KEY AUTOINCREMENT,'+ 
+                                         'email TEXT,'+ 
+                                         'answers_json TEXT,'+ 
+                                         'created_at DATETIME DEFAULT CURRENT_TIMESTAMP)'; 
+        Clomosy.DBSQLiteQuery.OpenOrExecute; 
+
+        Clomosy.DBSQLiteQuery.SQL.Text = 'INSERT INTO skin_survey_temp (email, answers_json) VALUES ('+ 
+                                          QuotedStr(email)+', '+QuotedStr(AnswersJSON)+')'; 
+        Clomosy.DBSQLiteQuery.OpenOrExecute; 
+    except 
+        ShowMessage('Geçici kayıt sırasında hata oluştu: '+LastExceptionMessage); 
+    } 
+} 
+
+
+void BuildAnswersJSON; 
+var j : Integer; 
+q, a : String; 
+{ 
+    AnswersJSON = '['; 
+    for (j = 0 to 9) { 
+        q = AnswerArr[j,0]; 
+        a = AnswerArr[j,1]; 
+        if (q == '') q = QuestionArr[j]; 
+        if (a == '') a = '-'; 
+
+        AnswersJSON = AnswersJSON + '{"q":'+QuotedStr(q)+',"a":'+QuotedStr(a)+'}'; 
+        if (j < 9) AnswersJSON = AnswersJSON + ','; 
+    } 
+    AnswersJSON = AnswersJSON + ']'; 
+} 
+
+void OnExamFinished; 
+var prompt, safePrompt: String; 
+{ 
+
+    BuildAnswersJSON; 
+    SaveTempAnswersToDB; 
+
+
+    prompt = 'Sen deneyimli bir cilt bakım uzmanısın. ' + 
+             'Aşağıdaki anket cevaplarına göre kullanıcının cilt tipini belirle. ' + 
+             'Sonuç formatı: sadece bir kelime döndür (Kuru, Yağlı, Karma, Normal, Hassas). ' + 
+             'Anket cevapları: ' + AnswersJSON; 
+
+
+    safePrompt = prompt; 
+    safePrompt = clGetStringReplace(safePrompt, '\', '\\');  
+    safePrompt = clGetStringReplace(safePrompt, '"', '\"'); 
+    safePrompt = clGetStringReplace(safePrompt, #13#10, ' '); 
+    safePrompt = clGetStringReplace(safePrompt, #10, ' ');    
+    safePrompt = clGetStringReplace(safePrompt, #13, ' ');   
+
+    RequestBody = '{ "contents": [ { "parts": [ { "text": "' + safePrompt + '" } ] } ] }'; 
+
+    //ShowMessage(RequestBody); 
+
+    try 
+        API_KEY = 'YOURTOKEN'; 
+        RestCreate( 
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + API_KEY, 
+            RequestBody 
+        ); 
+    except 
+        ShowMessage('Veri hazırlanırken hata oluştu: ' + LastExceptionMessage); 
+    } 
+} 
+
+void motionControl; 
+var SelectedIndex: Integer; 
+clickedBtn:TClProButton; 
+{ 
+    clickedBtn = TClProButton(myForm.Clsender); 
+    SelectedIndex = RadioGroup1.ItemIndex; 
+
+    if (clickedBtn.clTagStr == 'ok') { 
+        OnExamFinished; 
+    } else { 
+        if (clickedBtn.clTagInt == 0) 
+        { 
+            questionCount = questionCount - 1; 
+            NextBtn.Text = 'Sonraki >'; 
+            NextBtn.clTagStr = '--'; 
+            if (questionCount == -1) { 
+                ShowMessage('İlk sorudasınız.'); 
+                questionCount = 0; 
+            } else { 
+                LoadRadioGroupOptions; 
+            } 
+            RadioGroup1.ItemIndex = RadioGroup1.Items.IndexOf(AnswerArr[questionCount,1]); 
+        } 
+        else 
+        { 
+            if (SelectedIndex == -1) { 
+                ShowMessage('Bir seçenek seçiniz.'); 
+                Exit; 
+            } 
+
+            AnswerArr[questionCount,0] = QuestionArr[questionCount]; 
+            AnswerArr[questionCount,1] = RadioGroup1.Items[SelectedIndex]; 
+            questionCount = questionCount + 1; 
+
+            if (questionCount == 10) { 
+                ShowMessage('Sonuçları görmek için ''GÖNDER'' butonuna basınız.'); 
+                questionCount = 9; 
+                NextBtn.Text = 'GÖNDER'; 
+                NextBtn.clTagStr = 'ok'; 
+            } else { 
+                LoadRadioGroupOptions; 
+                RadioGroup1.ItemIndex = RadioGroup1.Items.IndexOf(AnswerArr[questionCount,1]); 
+            } 
+        } 
+    } 
+} 
+
+void OnBackMainPage; 
+{ 
+    RadioGroup1.Items.Clear; 
+    NextBtn.Text = 'Sonraki >'; 
+    NextBtn.clTagStr = '--'; 
+    ResultContainerPnl.Visible = False; 
+    Memo1.Lines.Clear; 
+    MainContainerPnl.Visible = True; 
+} 
+
+void OnStartBtnClick; 
+var k:Integer; 
+{ 
+    AnswerArr = VarArrayCreate([0, 9, 0, 1], 12); 
+    MainContainerPnl.Visible = False; 
+    questionCount = 0; 
+    SurveyContainerPnl.Visible = True; 
+    QuestionCountLbl.Visible = True; 
+    LoadRadioGroupOptions; 
+} 
+
+void SetMainContainer; 
+{ 
+    MainContainerPnl=myForm.AddNewProPanel(myForm,'MainContainerPnl'); 
+    MainContainerPnl.Align = alClient; 
+    MainContainerPnl.Margins.Top = 10; 
+    MainContainerPnl.Margins.Left = 10; 
+    MainContainerPnl.Margins.Right = 10; 
+    MainContainerPnl.Margins.Bottom = 10; 
+    
+
+    CaptionLbl = myForm.AddNewProLabel(MainContainerPnl,'CaptionLbl','Yapay Zeka ile Cilt Tipi Analizi');
+    CaptionLbl.Align = alMostTop;          
+    CaptionLbl.Margins.Top = 50;     
+    CaptionLbl.Height = 80;                
+    CaptionLbl.clProSettings.Autosize = False; 
+    CaptionLbl.clProSettings.FontColor = clAlphaColor.clHexToColor('#a176bc');
+    CaptionLbl.clProSettings.FontSize = 22;
+    CaptionLbl.clProSettings.FontVertAlign = palCenter;
+    CaptionLbl.clProSettings.FontHorzAlign = palCenter;
+    CaptionLbl.clProSettings.TextSettings.Font.Style = [fsBold];
+    CaptionLbl.clProSettings.IsFill = True;
+    CaptionLbl.clProSettings.IsRound = True;
+    CaptionLbl.SetclProSettings(CaptionLbl.clProSettings);
+
+    StartBtn = myForm.AddNewProButton(MainContainerPnl,'StartBtn','ANALİZE BAŞLA'); 
+    StartBtn.Align = AlBottom; 
+    StartBtn.Height = 50; 
+    StartBtn.Margins.Left = MainContainerPnl.Width / 4; 
+    StartBtn.Margins.Right = MainContainerPnl.Width / 4; 
+    StartBtn.Margins.Bottom = MainContainerPnl.Height /6; 
+    StartBtn.clProSettings.FontColor = clAlphaColor.clHexToColor('#ffffff'); 
+    StartBtn.clProSettings.FontSize = 14; 
+    StartBtn.clProSettings.FontVertAlign = palcenter; 
+    StartBtn.clProSettings.FontHorzAlign = palCenter; 
+    StartBtn.clProSettings.TextSettings.Font.Style = [fsBold]; 
+    StartBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#dbcee3'); 
+    StartBtn.clProSettings.RoundHeight = 20; 
+    StartBtn.clProSettings.RoundWidth = 20; 
+    StartBtn.clProSettings.IsFill = True; 
+    StartBtn.clProSettings.IsRound = True; 
+    StartBtn.SetclProSettings(StartBtn.clProSettings); 
+
+
+     myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/yuz.png');
+     myForm.SetFormBGImage('yuz.png');
+
+    myForm.AddNewEvent(StartBtn,tbeOnClick,'OnStartBtnClick'); 
+} 
+
+void SetSurveyContainer; 
+{ 
+    QuestionCountLbl = myForm.AddNewProLabel(myForm.LytTopBar,'QuestionCountLbl','1/10'); 
+    QuestionCountLbl.Align = AlRight; 
+    QuestionCountLbl.Margins.Top = 10; 
+    QuestionCountLbl.Margins.Right = 10; 
+    QuestionCountLbl.Width = myForm.LytTopBar.Width /4; 
+    QuestionCountLbl.Visible = False; 
+    QuestionCountLbl.clProSettings.FontColor = clAlphaColor.clHexToColor('#222625'); 
+    QuestionCountLbl.clProSettings.FontSize = 14; 
+    QuestionCountLbl.clProSettings.FontVertAlign = palCenter; 
+    QuestionCountLbl.clProSettings.FontHorzAlign = palCenter; 
+    QuestionCountLbl.clProSettings.TextSettings.Font.Style = [fsBold]; 
+    QuestionCountLbl.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#f8fdfb'); 
+    QuestionCountLbl.clProSettings.IsFill = True; 
+    QuestionCountLbl.clProSettings.RoundHeight = 10; 
+    QuestionCountLbl.clProSettings.RoundWidth = 10; 
+    QuestionCountLbl.clProSettings.IsRound = True; 
+    QuestionCountLbl.SetclProSettings(QuestionCountLbl.clProSettings); 
+
+    SurveyContainerPnl=myForm.AddNewProPanel(myForm,'SurveyContainerPnl'); 
+    SurveyContainerPnl.Align = alClient; 
+    SurveyContainerPnl.Margins.Top = 10; 
+    SurveyContainerPnl.Margins.Left = 10; 
+    SurveyContainerPnl.Margins.Right = 10; 
+    SurveyContainerPnl.Margins.Bottom = 10; 
+    SurveyContainerPnl.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#f3e2e2');
+    SurveyContainerPnl.Visible = False; 
+    SurveyContainerPnl.SetclProSettings(SurveyContainerPnl.clProSettings);
+    
+
+    QuestionLyt = myForm.AddNewLayout(SurveyContainerPnl,'QuestionLyt'); 
+    QuestionLyt.Align=ALMostTop; 
+    QuestionLyt.Height = SurveyContainerPnl.Height / 8; 
+    QuestionLyt.Margins.Top = 10; 
+    QuestionLyt.Margins.Left = 5; 
+    QuestionLyt.Margins.Right = 5; 
+
+    QuestionCptLbl = myForm.AddNewProLabel(QuestionLyt,'QuestionCptLbl','SORU: '); 
+    QuestionCptLbl.Align = AlMostLeft; 
+    QuestionCptLbl.Width = QuestionLyt.Width /4; 
+    QuestionCptLbl.clProSettings.FontColor = clAlphaColor.clHexToColor('#222625'); 
+    QuestionCptLbl.clProSettings.FontSize = 14; 
+    QuestionCptLbl.clProSettings.FontVertAlign = palcenter; 
+    QuestionCptLbl.clProSettings.FontHorzAlign = palCenter; 
+    QuestionCptLbl.clProSettings.TextSettings.Font.Style = [fsBold]; 
+    QuestionCptLbl.clProSettings.IsFill = True; 
+    QuestionCptLbl.clProSettings.IsRound = True; 
+    QuestionCptLbl.SetclProSettings(QuestionCptLbl.clProSettings); 
+
+    QuestionLbl = myForm.AddNewProLabel(QuestionLyt,'QuestionLbl','Soru İçeriği Bekleniyor...'); 
+    QuestionLbl.Align = AlClient; 
+    QuestionLbl.SetclProSettings(QuestionCptLbl.clProSettings); 
+
+    RadioGroup1 = myForm.AddNewRadioGroup(SurveyContainerPnl,'RadioGroup1','-'); 
+    RadioGroup1.Align = alClient; 
+    RadioGroup1.Margins.Left = 5; 
+    RadioGroup1.Margins.Right = 5; 
+    RadioGroup1.Title.Text = 'Seçeneklerden birini işaretleyiniz. (Zorunlu)'; 
+    myForm.AddNewEvent(RadioGroup1, tbeOnClick, 'OnRadioButtonClick'); 
+
+  BttmLyt = myForm.AddNewLayout(SurveyContainerPnl,'BttmLyt');
+  BttmLyt.Align=ALMostBottom;
+  BttmLyt.Height = SurveyContainerPnl.Height / 10;
+  BttmLyt.Margins.Top = 10;
+  BttmLyt.Margins.Bottom = 10;
+  BttmLyt.Margins.Left = 5;
+  BttmLyt.Margins.Right = 5;
+
+  BackBtn = myForm.AddNewProButton(BttmLyt,'BackBtn','< Geri');
+  BackBtn.Align = alLeft;
+  BackBtn.Width = BttmLyt.Width / 3;
+  BackBtn.Margins.Left = 10;
+  BackBtn.clTagInt = 0;
+  BackBtn.SetclProSettings(StartBtn.clProSettings);
+  myForm.AddNewEvent(BackBtn,tbeOnClick,'motionControl');
+
+  NextBtn = myForm.AddNewProButton(BttmLyt,'NextBtn','Sonraki >');
+  NextBtn.Align = alRight;
+  NextBtn.Width = BttmLyt.Width / 3;
+  NextBtn.Margins.Right = 10;
+  NextBtn.clTagInt = 1;
+  NextBtn.SetclProSettings(StartBtn.clProSettings);
+  myForm.AddNewEvent(NextBtn,tbeOnClick,'motionControl');
+}
+
+void SetResultContainer;
+{
+  ResultContainerPnl=myForm.AddNewProPanel(myForm,'ResultContainerPnl');
+  ResultContainerPnl.Align = alClient;
+  ResultContainerPnl.Margins.Top = 10;
+  ResultContainerPnl.Margins.Left = 10;
+  ResultContainerPnl.Margins.Right = 10;
+  ResultContainerPnl.Margins.Bottom = 10;
+  ResultContainerPnl.Visible = False;
+  
+  Memo1 = myForm.AddNewMemo(ResultContainerPnl,'Memo1','');
+  Memo1.Align = AlBottom;
+  Memo1.Margins.Left = 20;
+  Memo1.Margins.Right = 20;
+  Memo1.Margins.Bottom = 20;
+  Memo1.Height = ResultContainerPnl.Height - 150;
+  Memo1.WordWrap = True; 
+  Memo1.ReadOnly = True;
+
+  BackMainPageBtn = myForm.AddNewProButton(ResultContainerPnl,'BackMainPageBtn','ANA SAYFA');
+  BackMainPageBtn.Align = AlMostBottom;
+  BackMainPageBtn.Height = 50;
+  BackMainPageBtn.Margins.Left = ResultContainerPnl.Width / 4;
+  BackMainPageBtn.Margins.Right = ResultContainerPnl.Width / 4;
+  BackMainPageBtn.Margins.Bottom = 20;
+  BackMainPageBtn.SetclProSettings(StartBtn.clProSettings);
+  myForm.AddNewEvent(BackMainPageBtn,tbeOnClick,'OnBackMainPage');
+}
+
+{
+
+
+
+QuestionArr = [
+  'Cildinizin gün içindeki genel hali nasıldır?',
+  'Cildinizde akne/sivilce oluşumu nasıldır?',
+  'Cildinizde hassasiyet ne kadar sık görülür?',
+  'Gözeneklerinizin görünümü nasıldır?',
+  'Cildinizin güneşe verdiği tepki nasıldır?',
+  'Beslenme alışkanlıklarınız cildinize etkisi ne?',
+  'Cildinizde leke veya renk eşitsizliği var mı?',
+  'Cildinizde kabuklanma veya dökülme olur mu?',
+  'Cildinizde yağlanma en çok nerede görülür?',
+  'Cildinizin ürünlere verdiği tepki nasıldır?'
+];
+
+Q1Arr = [
+  'Aşırı kuruluk ve gerginlik hissediyorum',
+  'Genel olarak dengeli ve normal',
+  'T bölgem (alın, burun, çene) yağlı; diğer bölgeler kuru',
+  'Gün boyu yağlı ve parlak görünüyor'
+];
+
+Q2Arr = [
+  'Çok sık, düzenli olarak akne çıkar',
+  'Ara sıra, özellikle stresli veya dönemsel olarak',
+  'Nadiren, belirli bölgelerde',
+  'Hiç çıkmaz'
+];
+
+Q3Arr = [
+  'Çok sık, neredeyse her gün',
+  'Bazen, özellikle bazı ürünleri kullandığımda',
+  'Nadiren',
+  'Hiç olmuyor'
+];
+
+Q4Arr = [
+  'Çok küçük, neredeyse görünmez',
+  'Orta boy, belli belirsiz',
+  'Büyük ve belirgin',
+  'Özellikle T bölgemde genişlemiş'
+];
+
+Q5Arr = [
+  'Hemen yanar, kolayca kızarırım',
+  'Önce yanar, sonra bronzlaşır',
+  'Kolayca bronzlaşır, nadiren yanarım',
+  'Hiç yanmam, direkt bronzlaşırım'
+];
+
+Q6Arr = [
+  'Çok yağlı/şekerli yiyecekler sonrası cildim bozuluyor',
+  'Bazen beslenmeye bağlı değişiklik oluyor',
+  'Nadiren etkileniyor',
+  'Hiç bir etkisi olmuyor'
+];
+
+Q7Arr = [
+  'Çok fazla var, cilt tonum dengesiz',
+  'Birkaç tane mevcut ama belirgin değil',
+  'Nadiren görülür',
+  'Hiç yok, cildim homojen'
+];
+
+Q8Arr = [
+  'Çok sık, özellikle soğuk havada',
+  'Ara sıra, bazı bölgelerde',
+  'Nadiren',
+  'Hiç olmaz'
+];
+
+Q9Arr = [
+  'Alın bölgesinde',
+  'Burunda',
+  'Çenede',
+  'Hiçbir bölgede parlama olmuyor'
+];
+
+Q10Arr = [
+  'Çoğu üründe tahriş, kızarıklık yaşıyorum',
+  'Bazı ürünlerde hafif tepki oluyor',
+  'Genellikle sorun olmuyor',
+  'Hiçbir ürüne tepki vermiyor'
+];
+
+/*
+  QuestionArr = [
+    'Cildinizin gün içindeki genel durumu nasıldır?',
+    'Cildinizde sık sık sivilce/akne çıkar mı?',
+    'Cildinizde kızarıklık, hassasiyet veya kaşıntı olur mu?',
+    'Gözeneklerinizin görünümü nasıldır?',
+    'Cildinizin güneşe karşı tepkisi nasıldır?',
+    'Cildinizin nem seviyesi nasıldır?',
+    'Cildinizde lekeler veya renk eşitsizliği var mı?',
+    'Cildinizde pul pul dökülme veya kabuklanma olur mu?',
+    'Yüzünüzde parlayan bölgeler çoğunlukla neresi?',
+    'Göz çevrenizde morluk veya şişlik olur mu?'
+  ];
+
+
+  Q1Arr  = ['Çok kuru','Normal','Yağlı','Karma'];
+  Q2Arr  = ['Evet, sık sık','Bazen','Nadiren','Hiç çıkmaz'];
+  Q3Arr  = ['Çok sık','Ara sıra','Nadiren','Hiç olmaz'];
+  Q4Arr  = ['Küçük','Orta','Büyük ve belirgin'];
+  Q5Arr  = ['Hemen yanar','Önce yanar sonra bronzlaşır','Kolay bronzlaşır','Hiç yanmaz'];
+  Q6Arr  = ['Çok kuru','Normal','Dengeli','Yağlı'];
+  Q7Arr  = ['Çok fazla','Biraz','Nadiren','Hiç'];
+  Q8Arr  = ['Çok sık','Ara sıra','Nadiren','Hiç'];
+  Q9Arr  = ['Alın','Burun','Çene','Hiçbiri'];
+  Q10Arr = ['Sık sık','Ara sıra','Nadiren','Hiç'];
+
+*/
+
+  myForm = TclForm.Create(Self);
+  myForm.BtnFormMenu.Visible = False;
+  myForm.FormWaiting.Visible = False;
+
+  Clomosy.DBSQLiteConnect(Clomosy.AppFilesPath + 'sonn.db3', '');
+
+  email = '';
+  qSess = Clomosy.DBSQLiteQueryWith('SELECT email FROM appsession WHERE id=1');
+  qSess.OpenOrExecute;
+  if (not qSess.EOF) 
+    email = qSess.FieldByName('email').AsString;
+  qSess.Free;
+
+  SetMainContainer;
+  SetSurveyContainer;
+  SetResultContainer;
+
+  myForm.Run;
+}

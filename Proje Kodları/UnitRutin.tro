@@ -1,0 +1,229 @@
+var
+  RoutineForm: TclForm;
+  RoutineMemo: TclMemo;
+  RefreshBtn: TclProButton;
+  testComboBox: TclComboBox;
+  infoLabel: TclLabel;
+  qSess, qSave: TclSQLiteQuery;
+  email, skinType: String;
+  Rest: TclRest;
+  API_KEY, RequestBody: String;
+  selectedDay: String;
+
+
+void SaveRoutineToDB(dayName: String; routineText: String);
+{
+  try
+    
+    email = '';
+    qSess = Clomosy.DBSQLiteQueryWith('SELECT email FROM appsession WHERE id=1');
+    qSess.OpenOrExecute;
+    if not qSess.EOF
+      email = qSess.FieldByName('email').AsString;
+    qSess.Free;
+
+    
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'CREATE TABLE IF NOT EXISTS skin_rutinler (' +
+      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
+      'email TEXT,' +
+      'day TEXT,' +
+      'routine TEXT,' +
+      'created_at DATETIME DEFAULT CURRENT_TIMESTAMP)';
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+    
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'DELETE FROM skin_rutinler WHERE email=' + QuotedStr(email) + ' AND day=' + QuotedStr(dayName);
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+    
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'INSERT INTO skin_rutinler (email, day, routine) VALUES (' +
+      QuotedStr(email) + ',' + QuotedStr(dayName) + ',' + QuotedStr(routineText) + ')';
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+  except
+    ShowMessage('Rutin kaydı sırasında hata: ' + LastExceptionMessage);
+  }
+}
+
+void OnRoutineCompleted;
+var 
+txt: String;
+{
+  try
+    if Rest.StatusCode >= 400
+    {
+      ShowMessage('API Hatası: ' + Rest.Response);
+      Exit;
+    }
+
+    txt = '';
+    try
+      txt = Clomosy.CLParseJSON(Rest.Response, 'candidates.0.content.parts.0.text');
+    except
+      txt = '';
+    }
+
+    if txt == ''
+    {
+      ShowMessage('Rutini çözümlerken hata.');
+      Exit;
+    }
+
+    RoutineMemo.Lines.Text = txt;
+    SaveRoutineToDB(selectedDay, txt);
+
+  except
+    ShowMessage('Rutin alınırken hata: ' + LastExceptionMessage);
+  }
+}
+
+void RestCreate(ABaseUrl, ABody: String);
+{
+  try
+    Rest = TclRest.Create;
+    Rest.Accept = 'application/json';
+    Rest.ContentType = 'application/json';
+    Rest.Method = rmPOST;
+    Rest.ConnectTimeOut = 30000;
+    Rest.BaseURL = ABaseUrl;
+    Rest.Body = ABody;
+    Rest.OnCompleted = 'OnRoutineCompleted';
+    Rest.ExecuteAsync;
+  except
+    ShowMessage('Sunucuya bağlanırken hata oluştu: ' + LastExceptionMessage);
+  }
+}
+
+void LoadRoutine(dayName: String);
+var prompt, safePrompt: String;
+{
+  try
+    selectedDay = dayName;
+
+    // Email al
+    email = '';
+    qSess = Clomosy.DBSQLiteQueryWith('SELECT email FROM appsession WHERE id=1');
+    qSess.OpenOrExecute;
+    if not qSess.EOF
+      email = qSess.FieldByName('email').AsString;
+    qSess.Free;
+
+    // Skin type al
+    skinType = '';
+    qSess = Clomosy.DBSQLiteQueryWith('SELECT skin_type FROM skin_profile WHERE email=' + QuotedStr(email));
+    qSess.OpenOrExecute;
+    if not qSess.EOF
+      skinType = qSess.FieldByName('skin_type').AsString;
+    qSess.Free;
+
+    if skinType == ''
+    {
+      ShowMessage('Cilt tipi bulunamadı. Önce analiz yapmalısınız.');
+      Exit;
+    }
+
+    // Prompt oluştur, gün bilgisi ekleniyor
+    /*
+    prompt = 'Kullanıcının cilt tipi: ' + skinType + '. ' +
+             'Sen deneyimli bir dermatologsun. ' +
+             dayName + ' günü için sabah ve akşam adım adım cilt bakım rutini oluştur. ' +
+             'Her adımı ve uygulanışını detaylı şekilde yaz. ' +
+             'Kullanıcıya alerjen uyarısı ver.';
+    
+    
+    prompt = 'Kullanıcının cilt tipi: ' + skinType + '. ' +
+         'Sen deneyimli bir dermatologsun. ' +
+         dayName + ' günü için sabah ve akşam adım adım cilt bakım rutini oluştur. ' +
+  
+         'Her adımı ve uygulanışını detaylı şekilde yaz. ' +
+         'Listeleme yapabilirsin ama gereksiz semboller ** veya * kullanma. ' +
+         'Giriş cümlesi “Buyrun, işte, elbette” gibi olmasın, onun yerine “ Bakım Rutini Önerim şudur:” ile başlasın. ' +
+         'Her adımda ürün tipi, amacı ve uygulanışını açıkça belirt. ' +
+         'Kullanıcıya alerjen uyarısı ver.'+
+         'En sonunda mutlaka şu uyarıyı ekle: “Herhangi bir sorun olursa mutlaka doktora danışın.” ';
+         
+         */
+         
+         prompt = 'Kullanıcının cilt tipi: ' + skinType + '. ' +
+         'Sen deneyimli bir dermatologsun. ' +
+         dayName + ' günü için sabah ve akşam adım adım cilt bakım rutini oluştur. ' +
+         'Metni sadece düz yazı veya numaralandırılmış liste (1., 2., 3.) formatında ver. ' +
+         'Yazıları bold yapma, sadece rakamlarla listele. ' +
+         'Giriş cümlesi şu şekilde başlasın: "Bakım Rutini Önerilerim Şu Şekildedir:". ' +
+         'Her adımda ürün tipi, amacı ve uygulanışını açıkça belirt. ' +
+         'Kullanıcıya alerjen uyarısı ver. ' +
+         'En sonunda mutlaka şu uyarıyı ekle: "Herhangi bir sorun olursa mutlaka doktora danışın." ';
+
+
+    safePrompt = clGetStringReplace(prompt, '"', '\"');
+    safePrompt = clGetStringReplace(safePrompt, #10, ' ');
+    safePrompt = clGetStringReplace(safePrompt, #13, ' ');
+
+    RequestBody = '{ "contents": [ { "parts": [ { "text": "' + safePrompt + '" } ] } ] }';
+    API_KEY = 'YOURTOKEN';
+    RestCreate('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + API_KEY, RequestBody);
+
+  except
+    ShowMessage('Rutin hazırlanırken hata: ' + LastExceptionMessage);
+  }
+}
+
+void comboBoxChanged;
+{
+
+  if testComboBox.ItemIndex == 0
+    Exit;
+
+  if testComboBox.ItemIndex > 0
+    LoadRoutine(testComboBox.Items[testComboBox.ItemIndex]);
+}
+
+
+{
+  RoutineForm = TclForm.Create(Self);
+  RoutineForm.BtnFormMenu.Visible = False;
+
+  RoutineMemo = RoutineForm.AddNewMemo(RoutineForm, 'RoutineMemo', '');
+  RoutineMemo.Align = alClient;
+  RoutineMemo.ReadOnly = True;
+  RoutineMemo.WordWrap = True;
+  RoutineMemo.TextSettings.Font.Size = 14;
+
+  RefreshBtn = RoutineForm.AddNewProButton(RoutineForm, 'RefreshBtn', 'YENİDEN OLUŞTUR');
+  RefreshBtn.Align = alBottom;
+  RefreshBtn.Height = 50;
+  RefreshBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#dbcee3');
+  RefreshBtn.clProSettings.FontColor = clAlphaColor.clHexToColor('#ffffff');
+  RefreshBtn.SetclProSettings(RefreshBtn.clProSettings);
+  RoutineForm.AddNewEvent(RefreshBtn, tbeOnClick, 'LoadRoutine');
+
+  testComboBox = RoutineForm.AddNewComboBox(RoutineForm, 'DayComboBox');
+  testComboBox.Align = alTop;
+  testComboBox.Width = 150;
+  testComboBox.Margins.Top = 10;
+  testComboBox.Margins.Left = 50;
+  testComboBox.Margins.Right = 50;
+
+  testComboBox.AddItem('Lütfen gün seçiniz', '00');
+  testComboBox.AddItem('Pazartesi','01');
+  testComboBox.AddItem('Salı','02');
+  testComboBox.AddItem('Çarşamba','03');
+  testComboBox.AddItem('Perşembe','04');
+  testComboBox.AddItem('Cuma','05');
+  testComboBox.AddItem('Cumartesi','06');
+  testComboBox.AddItem('Pazar','07');
+
+  testComboBox.ItemIndex = 0;
+
+  RoutineForm.AddNewEvent(testComboBox, tbeOnChange, 'comboBoxChanged');
+
+  Clomosy.DBSQLiteConnect(Clomosy.AppFilesPath + 'sonn.db3', '');
+  
+  RoutineForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/yok.png');
+  RoutineForm.SetFormBGImage('yok.png');
+
+  RoutineForm.Run;
+}

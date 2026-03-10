@@ -1,0 +1,159 @@
+var 
+myForm: TclForm; 
+EmailEdit, PasswordEdit: TclProEdit; 
+LoginBtn, BackBtn: TClProButton; 
+TitleLbl: TclProLabel; 
+MainPnl: TclProPanel; 
+EmailImg, PasswordImg, TclLogo: TclProImage; 
+
+void GoToMainUnit; 
+{ 
+    Clomosy.RunUnit('Main'); 
+} 
+
+
+void LoginUser;
+
+var 
+  email, password, username: String; 
+  loginQuery: TclSQLiteQuery; 
+{ 
+    email = EmailEdit.Text; 
+    password = PasswordEdit.Text; 
+
+    if ((email == '') || (password == '')) { 
+        ShowMessage('Lütfen e-posta ve şifre girin.'); 
+        Exit; 
+    } 
+
+    loginQuery = Clomosy.DBSQLiteQueryWith( 
+        'SELECT * FROM users WHERE email = ' + QuotedStr(email) + 
+        ' AND password = ' + QuotedStr(password) 
+    ); 
+    loginQuery.OpenOrExecute; 
+
+    if (not loginQuery.EOF) { 
+        
+        username = loginQuery.FieldByName('name').AsString;
+
+        ShowMessage('Giriş başarılı!');
+
+        Clomosy.DBSQLiteQuery.SQL.Text =
+          'CREATE TABLE IF NOT EXISTS appsession ('+
+          'id INTEGER PRIMARY KEY CHECK (id=1),'+
+          'email TEXT,'+
+          'username TEXT)'; 
+        Clomosy.DBSQLiteQuery.OpenOrExecute;
+        
+        
+        Clomosy.DBSQLiteQuery.SQL.Text =
+          'INSERT OR REPLACE INTO appsession (id, email, username) VALUES (1, '+
+          QuotedStr(email)+', '+
+          QuotedStr(username)+')';
+        Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+        loginQuery.Free;
+
+        Clomosy.RunUnit('UnitHome');  
+    } else { 
+        ShowMessage('E-posta veya şifre hatalı.'); 
+        loginQuery.Free;
+    } 
+} 
+ 
+
+
+{ 
+    myForm = TclForm.Create(Self); 
+
+    MainPnl = myForm.AddNewProPanel(myForm, 'MainPnl'); 
+    MainPnl.Align = alCenter; 
+    MainPnl.Height = 500; 
+    MainPnl.Width = 400; 
+    MainPnl.Margins.Top = 20; 
+    MainPnl.Margins.Bottom = 20; 
+    MainPnl.clProSettings.RoundHeight = 40; 
+    MainPnl.clProSettings.RoundWidth = 40; 
+    MainPnl.clProSettings.IsTransparent = False; 
+    MainPnl.SetclProSettings(MainPnl.clProSettings); 
+    
+    
+    TclLogo = myForm.AddNewProImage(MainPnl, 'TclLogo');
+    TclLogo.Align = alMostTop;
+    TclLogo.Height = 120;
+    TclLogo.Margins.Top = 15;
+    TclLogo.Margins.Left = 20;
+    TclLogo.Margins.Right = 20;
+    TclLogo.Width = MainPnl.Width * 80 / 100;
+    TclLogo.clProSettings.IsTransparent = True;
+    myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/lok.png');
+    TclLogo.ClProSettings.PictureSource= 'lok.png'; 
+    TclLogo.SetclProSettings(TclLogo.clProSettings);
+
+    TitleLbl = myForm.AddNewProLabel(MainPnl, 'TitleLbl', 'Giriş Yap'); 
+    TitleLbl.Align = alMostTop; 
+    TitleLbl.Margins.Top = 10; 
+    TitleLbl.clProSettings.FontSize = 18; 
+    TitleLbl.clProSettings.FontColor = clAlphaColor.clHexToColor('#333333'); 
+    TitleLbl.SetclProSettings(TitleLbl.clProSettings); 
+
+    EmailEdit = myForm.AddNewProEdit(MainPnl, 'EmailEdit', 'E-posta'); 
+    EmailEdit.Align = alMostTop; 
+    EmailEdit.Height = 45; 
+    EmailEdit.Margins.Top = 15; 
+    EmailEdit.SetclProSettings(EmailEdit.clProSettings); 
+    EmailImg = myForm.AddNewProImage(EmailEdit, 'EmailImg'); 
+    EmailImg.Align = alLeft; 
+    EmailImg.Margins.Left = 10; 
+    EmailImg.Margins.Top = 5; 
+    EmailImg.Margins.Bottom = 5; 
+    EmailImg.Width = 25; 
+    myForm.SetImage(EmailImg, 'https://i.imgur.com/g9t6md5.png'); 
+
+    PasswordEdit = myForm.AddNewProEdit(MainPnl, 'PasswordEdit', 'Şifre'); 
+    PasswordEdit.Align = alMostTop; 
+    PasswordEdit.Height = 45; 
+    PasswordEdit.Margins.Top = 15; 
+    PasswordEdit.Password = True; 
+    PasswordEdit.SetclProSettings(PasswordEdit.clProSettings); 
+    PasswordImg = myForm.AddNewProImage(PasswordEdit, 'PasswordImg'); 
+    PasswordImg.Align = alLeft; 
+    PasswordImg.Margins.Left = 10; 
+    PasswordImg.Margins.Top = 5; 
+    PasswordImg.Margins.Bottom = 5; 
+    PasswordImg.Width = 25; 
+    myForm.SetImage(PasswordImg, 'https://i.imgur.com/G2qFyZf.png'); 
+
+    LoginBtn = myForm.AddNewProButton(MainPnl, 'LoginBtn', 'Giriş Yap'); 
+    LoginBtn.Align = alMostTop; 
+    LoginBtn.Height = 50; 
+    LoginBtn.Margins.Top = 25; 
+    LoginBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#deffdd'); 
+    LoginBtn.clProSettings.RoundHeight = 20; 
+    LoginBtn.clProSettings.RoundWidth = 20; 
+    LoginBtn.clProSettings.BorderColor = clAlphaColor.clHexToColor('#deffdd'); 
+    LoginBtn.clProSettings.FontSize = 16; 
+    LoginBtn.SetclProSettings(LoginBtn.clProSettings); 
+
+    BackBtn = myForm.AddNewProButton(MainPnl, 'BackBtn', 'Geri Dön'); 
+    BackBtn.Align = alMostTop; 
+    BackBtn.Height = 50; 
+    BackBtn.Margins.Top = 15; 
+    BackBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#f7e5f0'); 
+    BackBtn.clProSettings.RoundHeight = 20; 
+    BackBtn.clProSettings.RoundWidth = 20; 
+    BackBtn.clProSettings.BorderColor = clAlphaColor.clHexToColor('#f7e5f0'); 
+    BackBtn.clProSettings.FontSize = 16; 
+    BackBtn.SetclProSettings(BackBtn.clProSettings); 
+
+    myForm.AddNewEvent(BackBtn, tbeOnClick, 'GoToMainUnit'); 
+    myForm.AddNewEvent(LoginBtn, tbeOnClick, 'LoginUser'); 
+
+    Clomosy.DBSQLiteConnect(Clomosy.AppFilesPath + 'sonn.db3', ''); 
+    
+    
+     myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/yok.png');
+     myForm.SetFormBGImage('yok.png');
+
+    myForm.Run; 
+}

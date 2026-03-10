@@ -1,0 +1,130 @@
+var
+  RoutineViewForm: TclForm;
+  RoutineMemo: TclMemo;
+  BtnPanel:TClLayout;
+  NextBtn, PrevBtn: TclProButton;
+  qSess, qQuery: TclSQLiteQuery;
+  email: String;
+  currentIndex: Integer;
+  days: array[0..6] of String; 
+  dayRoutines: array[0..6] of String;
+
+
+void LoadRoutineForDay(dayName: String);
+var
+  txt: String;
+{
+  txt = '';
+  
+
+  qQuery = Clomosy.DBSQLiteQueryWith('SELECT routine FROM skin_rutinler WHERE email=' + QuotedStr(email) + ' AND day=' + QuotedStr(dayName));
+  qQuery.OpenOrExecute;
+  
+  if not qQuery.EOF 
+    txt = qQuery.FieldByName('routine').AsString
+  else
+    txt = '';
+
+  qQuery.Free;
+
+  if txt == '' 
+    ShowMessage(dayName + ' günü için rutin oluşturulmamış.')
+  else
+    RoutineMemo.Lines.Text = txt;
+
+  dayRoutines[currentIndex] = txt;
+}
+
+
+void NextDay;
+{
+  currentIndex = currentIndex + 1;
+  if currentIndex > 6 
+    currentIndex = 6;
+  LoadRoutineForDay(days[currentIndex]);
+}
+
+
+void PrevDay;
+{
+  currentIndex = currentIndex - 1;
+  if currentIndex < 0 
+    currentIndex = 0;
+  LoadRoutineForDay(days[currentIndex]);
+}
+
+
+{
+
+  RoutineViewForm = TclForm.Create(Self);
+  RoutineViewForm.BtnFormMenu.Visible = False;
+
+  
+  RoutineMemo = RoutineViewForm.AddNewMemo(RoutineViewForm,'RoutineMemo','');
+  RoutineMemo.Align = alClient;
+  RoutineMemo.ReadOnly = True;
+  RoutineMemo.WordWrap = True;
+  RoutineMemo.TextSettings.Font.Size = 14;
+
+
+  BtnPanel = RoutineViewForm.AddNewLayout(RoutineViewForm,'BtnPanel');
+  BtnPanel.Align = alBottom;
+  BtnPanel.Height = 70;              
+  BtnPanel.Margins.Left = 20;
+  BtnPanel.Margins.Right = 20;
+  BtnPanel.Margins.Bottom = 20;
+
+
+  PrevBtn = RoutineViewForm.AddNewProButton(BtnPanel, 'PrevBtn', 'Önceki Gün');
+  PrevBtn.Align = alLeft;
+  PrevBtn.Width = BtnPanel.Width div 2 - 10;        
+  PrevBtn.Height = 50;
+  PrevBtn.Margins.Right = 10;
+  PrevBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#deffdd');
+  PrevBtn.clProSettings.RoundWidth = 25;
+  PrevBtn.clProSettings.RoundHeight = 25;
+  PrevBtn.SetclProSettings(PrevBtn.clProSettings);
+  RoutineViewForm.AddNewEvent(PrevBtn, tbeOnClick, 'PrevDay');
+
+  
+  NextBtn = RoutineViewForm.AddNewProButton(BtnPanel, 'NextBtn', 'Sonraki Gün');
+  NextBtn.Align = alRight;
+  NextBtn.Width = BtnPanel.Width div 2 - 10;        
+  NextBtn.Height = 50;
+  NextBtn.Margins.Left = 10;
+  NextBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#f7e5f0');
+  NextBtn.clProSettings.RoundWidth = 25;
+  NextBtn.clProSettings.RoundHeight = 25;
+  NextBtn.SetclProSettings(NextBtn.clProSettings);
+  RoutineViewForm.AddNewEvent(NextBtn, tbeOnClick, 'NextDay');
+
+  
+  days[0] = 'Pazartesi';
+  days[1] = 'Salı';
+  days[2] = 'Çarşamba';
+  days[3] = 'Perşembe';
+  days[4] = 'Cuma';
+  days[5] = 'Cumartesi';
+  days[6] = 'Pazar';
+
+  
+  Clomosy.DBSQLiteConnect(Clomosy.AppFilesPath + 'sonn.db3','');
+
+  
+  email = '';
+  qSess = Clomosy.DBSQLiteQueryWith('SELECT email FROM appsession WHERE id=1');
+  qSess.OpenOrExecute;
+  if not qSess.EOF 
+    email = qSess.FieldByName('email').AsString;
+  qSess.Free;
+
+  currentIndex = 0;
+  LoadRoutineForDay(days[currentIndex]);
+  
+  RoutineViewForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/yok.png');
+  RoutineViewForm.SetFormBGImage('yok.png');
+
+  RoutineViewForm.Run;
+
+
+}

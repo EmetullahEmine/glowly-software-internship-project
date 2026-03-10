@@ -1,0 +1,95 @@
+var
+  myForm: TclForm;
+  GirisBtn, UyeolBtn, HiddenPasswordBtn, NormalPasswordBtn: TC1ProButton;
+  UyeOlLbl, OrLabel: TClProLabel;
+  MainPnl: TclPropanel;
+  TclLogo: TclProImage;
+  ArkaImg: TclProImage;
+
+void GoToKayitolUnit;
+
+{
+  Clomosy.RunUnit('UnitRegister');
+}
+  
+void GoToLoginUnit;
+
+{
+  Clomosy.RunUnit('UnitLogin');
+}
+
+
+{
+
+  myForm = TclForm.Create(Self);
+
+  myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/Arkaplan.png');
+  myForm.SetFormBGImage('Arkaplan.png');
+  
+  
+  MainPnl=myForm.AddNewProPanel (myForm, 'MainPnl');
+  MainPnl.Align=alCenter;
+  MainPnl.Height=600;
+  MainPnl.Width=400;
+  MainPnl.Margins. Top=30;
+  MainPnl.Margins. Bottom=40;
+  MainPnl.clProSettings. RoundHeight=40;
+  MainPnl.clProSettings. Roundwidth=40;
+  MainPnl.clProSettings. IsTransparent=False;
+  MainPnl.SetclProSettings (MainPnl.clProSettings);
+
+
+  TclLogo=myForm.AddNewProImage(myForm, 'TclLogo');
+  TclLogo.Align=alMostTop;
+  TclLogo.Height=180;
+  TclLogo.Margins.Top=20;
+  TclLogo.Margins.Left=20;
+  TclLogo.Margins.Right=20;
+  TclLogo.Width=MainPnl.Width *600/100;
+  TclLogo.clProSettings.IsTransparent=True;
+  myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/lok.png');
+  TclLogo.ClProSettings.PictureSource= 'lok.png'; 
+  TclLogo.SetclProSettings (TclLogo.ClProSettings);
+
+
+  GirisBtn=myForm.AddNewProButton(MainPnl, 'GirisBtn', 'Giriş Yap');
+  GirisBtn.Align=alCenter;
+  GirisBtn.Height=50;
+  GirisBtn.Width=MainPnl.Width *70/100;
+  GirisBtn.Margins.Top=30;
+  GirisBtn.Margins.Left=20;
+  GirisBtn.Margins. Right=20;
+  GirisBtn.Margins.Bottom=5;
+  GirisBtn.ClProSettings.BackgroundColor=clAlphaColor.clHexToColor('#cefbcb');
+  GirisBtn.ClProSettings.RoundHeight=20;
+  GirisBtn.ClProSettings.Roundwidth=20;
+  GirisBtn.ClProSettings.BorderColor=clAlphaColor.clHexToColor('#dfd5e1');
+  Girisbtn.ClProSettings.FontColor=clAlphaColor.clHexToColor('070807');
+  Girisbtn.ClProSettings.FontSize=16;
+  GirisBtn.ClProSettings.BorderWidth=2;
+  GirisBtn.SetclProSettings(GirisBtn.ClProSettings);
+
+
+  UyeolBtn=myForm.AddNewProButton(MainPnl, 'UyeolBtn', 'Üye ol');
+  UyeolBtn.Align=alCenter;
+  UyeolBtn.Height=50;
+  UyeolBtn.width=MainPnl.width *70/100;
+  UyeolBtn.Margins.Top=200;
+  UyeolBtn.Margins.Left=20;
+  UyeolBtn.Margins.Right=20;
+  UyeolBtn.Margins.Bottom=5;
+  UyeolBtn.ClProSettings.BackgroundColor=clAlphaColor.clHexToColor('#f3ddeb');
+  UyeolBtn.ClProSettings.Roundwidth=20;
+  UyeolBtn.ClProSettings.BorderColor=clAlphaColor.clHexToColor('#e4dfcd');
+  UyeolBtn.ClProSettings.RoundHeight=20;
+  UyeolBtn.ClProSettings.FontSize=16;
+  UyeolBtn.ClProSettings.BorderWidth=2;
+  UyeolBtn.SetclProSettings(UyeolBtn.ClProSettings);
+
+
+  myForm.AddNewEvent (GirisBtn, tbeonClick, 'GoToLoginUnit');
+  myForm.AddNewEvent (UyeolBtn, tbeonClick, 'GoToKayitolUnit');
+
+  myForm.Run;
+  
+}

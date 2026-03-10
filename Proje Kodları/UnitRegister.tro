@@ -1,0 +1,188 @@
+var
+  myForm: TclForm;
+  NameEdit, EmailEdit, PasswordEdit, ConfirmPasswordEdit: TclProEdit;
+  RegisterBtn, BackBtn: TClProButton;
+  TitleLbl: TclProLabel;
+  MainPnl: TclProPanel;
+  TclLogo, EmailImg, PasswordImg, ConfirmPasswordImg: TclProImage;
+
+void GoToLoginUnit;
+{
+  Clomosy.RunUnit('Main');
+}
+
+void RegisterUser;
+var
+  names, email, password, confirmPassword: String;
+  countQuery: TclSQLiteQuery;
+{
+
+  names = NameEdit.Text;
+  email = EmailEdit.Text;
+  password = PasswordEdit.Text;
+  confirmPassword = ConfirmPasswordEdit.Text;
+
+  if ((names == '' ) || ( email == ''  ) )
+  {
+    ShowMessage('Lütfen tüm alanları doldurun.');
+    Exit;
+  }
+
+  if not(password == confirmPassword)
+  {
+    ShowMessage('Şifreler uyuşmuyor.');
+    Exit;
+  }
+
+  countQuery = Clomosy.DBSQLiteQueryWith(
+    'SELECT COUNT(*) as CNT FROM users WHERE email = ' + QuotedStr(email)
+  );
+  countQuery.OpenOrExecute;
+
+  if (countQuery.FieldByName('CNT').AsInteger > 0)
+  {
+    ShowMessage('Bu e-posta ile daha önce kayıt olunmuş.');
+    Exit;
+  }
+
+  Clomosy.DBSQLiteQuery.SQL.Text =
+    'INSERT INTO users (name, email, password) VALUES (' +
+    QuotedStr(names) + ', ' +
+    QuotedStr(email) + ', ' +
+    QuotedStr(password) + ')';
+  Clomosy.DBSQLiteQuery.OpenOrExecute;
+
+  ShowMessage('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+  GoToLoginUnit;
+}
+
+{
+  myForm = TclForm.Create(Self);
+
+  MainPnl = myForm.AddNewProPanel(myForm, 'MainPnl');
+  MainPnl.Align = alCenter;
+  MainPnl.Height = 650;
+  MainPnl.Width = 400;
+  MainPnl.Margins.Top = 20;
+  MainPnl.Margins.Bottom = 20;
+  MainPnl.clProSettings.RoundHeight = 40;
+  MainPnl.clProSettings.RoundWidth = 40;
+  MainPnl.clProSettings.IsTransparent = False;
+  MainPnl.SetclProSettings(MainPnl.clProSettings);
+
+
+  // Logo
+  TclLogo = myForm.AddNewProImage(MainPnl, 'TclLogo');
+  TclLogo.Align = alMostTop;
+  TclLogo.Height = 120;
+  TclLogo.Margins.Top = 15;
+  TclLogo.Margins.Left = 20;
+  TclLogo.Margins.Right = 20;
+  TclLogo.Width = MainPnl.Width * 80 / 100;
+  TclLogo.clProSettings.IsTransparent = True;
+  myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/lok.png');
+  TclLogo.ClProSettings.PictureSource= 'lok.png'; 
+  TclLogo.SetclProSettings(TclLogo.clProSettings);
+
+
+  TitleLbl = myForm.AddNewProLabel(MainPnl, 'TitleLbl', 'Yeni Hesap Oluştur');
+  TitleLbl.Align = alMostTop;
+  TitleLbl.Margins.Top = 10;
+  TitleLbl.clProSettings.FontSize = 18;
+  TitleLbl.clProSettings.FontColor = clAlphaColor.clHexToColor('#333333');
+  TitleLbl.SetclProSettings(TitleLbl.clProSettings);
+
+  NameEdit = myForm.AddNewProEdit(MainPnl, 'NameEdit', 'Ad Soyad');
+  NameEdit.Align = alMostTop;
+  NameEdit.Height = 45;
+  NameEdit.Margins.Top = 15;
+  NameEdit.SetclProSettings(NameEdit.clProSettings);
+
+  EmailEdit = myForm.AddNewProEdit(MainPnl, 'EmailEdit', 'E-posta');
+  EmailEdit.Align = alMostTop;
+  EmailEdit.Height = 45;
+  EmailEdit.Margins.Top = 15;
+  EmailEdit.SetclProSettings(EmailEdit.clProSettings);
+
+  EmailImg = myForm.AddNewProImage(EmailEdit, 'EmailImg');
+  EmailImg.Align = alLeft;
+  EmailImg.Margins.Left = 10;
+  EmailImg.Margins.Top = 5;
+  EmailImg.Margins.Bottom = 5;
+  EmailImg.Width = 25;
+  myForm.SetImage(EmailImg, 'https://i.imgur.com/g9t6md5.png');
+
+  PasswordEdit = myForm.AddNewProEdit(MainPnl, 'PasswordEdit', 'Şifre');
+  PasswordEdit.Align = alMostTop;
+  PasswordEdit.Height = 45;
+  PasswordEdit.Margins.Top = 15;
+  PasswordEdit.Password = True;
+  PasswordEdit.SetclProSettings(PasswordEdit.clProSettings);
+
+  PasswordImg = myForm.AddNewProImage(PasswordEdit, 'PasswordImg');
+  PasswordImg.Align = alLeft;
+  PasswordImg.Margins.Left = 10;
+  PasswordImg.Margins.Top = 5;
+  PasswordImg.Margins.Bottom = 5;
+  PasswordImg.Width = 25;
+  myForm.SetImage(PasswordImg, 'https://i.imgur.com/G2qFyZf.png');
+
+  ConfirmPasswordEdit = myForm.AddNewProEdit(MainPnl, 'ConfirmPasswordEdit', 'Şifre Tekrar');
+  ConfirmPasswordEdit.Align = alMostTop;
+  ConfirmPasswordEdit.Height = 45;
+  ConfirmPasswordEdit.Margins.Top = 15;
+  ConfirmPasswordEdit.Password = True;
+  ConfirmPasswordEdit.SetclProSettings(ConfirmPasswordEdit.clProSettings);
+
+  ConfirmPasswordImg = myForm.AddNewProImage(ConfirmPasswordEdit, 'ConfirmPasswordImg');
+  ConfirmPasswordImg.Align = alLeft;
+  ConfirmPasswordImg.Margins.Left = 10;
+  ConfirmPasswordImg.Margins.Top = 5;
+  ConfirmPasswordImg.Margins.Bottom = 5;
+  ConfirmPasswordImg.Width = 25;
+  myForm.SetImage(ConfirmPasswordImg, 'https://i.imgur.com/G2qFyZf.png');
+
+  RegisterBtn = myForm.AddNewProButton(MainPnl, 'RegisterBtn', 'Kayıt Ol');
+  RegisterBtn.Align = alMostTop;
+  RegisterBtn.Height = 50;
+  RegisterBtn.Margins.Top = 25;
+  RegisterBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#deffdd');
+  RegisterBtn.clProSettings.RoundHeight = 20;
+  RegisterBtn.clProSettings.RoundWidth = 20;
+  RegisterBtn.clProSettings.BorderColor = clAlphaColor.clHexToColor('#deffdd');
+  RegisterBtn.clProSettings.FontSize = 16;
+  RegisterBtn.SetclProSettings(RegisterBtn.clProSettings);
+
+  BackBtn = myForm.AddNewProButton(MainPnl, 'BackBtn', 'Geri Dön');
+  BackBtn.Align = alMostTop;
+  BackBtn.Height = 50;
+  BackBtn.Margins.Top = 15;
+  BackBtn.clProSettings.BackgroundColor = clAlphaColor.clHexToColor('#f7e5f0');
+  BackBtn.clProSettings.RoundHeight = 20;
+  BackBtn.clProSettings.RoundWidth = 20;
+  BackBtn.clProSettings.BorderColor = clAlphaColor.clHexToColor('#f7e5f0');
+  BackBtn.clProSettings.FontSize = 16;
+  BackBtn.SetclProSettings(BackBtn.clProSettings);
+
+  myForm.AddNewEvent(BackBtn, tbeOnClick, 'GoToLoginUnit');
+  myForm.AddNewEvent(RegisterBtn, tbeOnClick, 'RegisterUser');
+
+  Clomosy.DBSQLiteConnect(Clomosy.AppFilesPath + 'sonn.db3', '');
+
+  try
+    Clomosy.DBSQLiteQuery.SQL.Text =
+      'CREATE TABLE IF NOT EXISTS users (' +
+      'id INTEGER PRIMARY KEY AUTOINCREMENT,' +
+      'name TEXT NOT NULL,' +
+      'email TEXT NOT NULL UNIQUE,' +
+      'password TEXT NOT NULL' +
+      ')';
+    Clomosy.DBSQLiteQuery.OpenOrExecute;
+  except
+    ShowMessage('Exception Class: ' + LastExceptionClassName + ' Exception Message: ' + LastExceptionMessage);
+  }
+  myForm.AddAssetFromUrl('https://raw.githubusercontent.com/EmetullahEmine/atiker/main/yok.png');
+  myForm.SetFormBGImage('yok.png');
+  
+  myForm.Run;
+}
